@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام اختبارات الإدارة - Respect Eagle</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #5865F2;
+            --text-color: #f8fafc;
+            --border-color: #334155;
+            --correct-color: #22c55e;
+            --wrong-color: #ef4444;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-bar {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.2);
+            box-sizing: border-box;
+        }
+
+        .info-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-item {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        .info-item span {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .setup-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #0f172a;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .question-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .option-label {
+            padding: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #quiz-area {
+            display: none;
+        }
+
+        #result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            background: rgba(88, 101, 242, 0.1);
+            border: 1px solid var(--accent-color);
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="info-box">
+            <div class="info-item">👑 الإداري المُختَبِر: <span id="admin-display">غير محدد</span></div>
+            <div class="info-item">👤 المتقدم للاختبار: <span id="candidate-display">غير محدد</span></div>
+        </div>
+        <div>
+            <a href="https://discord.gg/MPtxYuRBN" target="_blank" class="btn" style="text-decoration:none; font-size:0.85rem;">رابط السيرفر 🔗</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>اختبار قبول الإدارة الشامل</h1>
+
+        <div class="setup-screen" id="setup-screen">
+            <label>اسم الإداري (المُختَبِر):</label>
+            <input type="text" id="admin-input" placeholder="مثال: Admin_Saleh">
+
+            <label>اسم الشخص المتقدم للاختبار:</label>
+            <input type="text" id="candidate-input" placeholder="مثال: Player_One">
+
+            <button class="btn" onclick="startQuiz()">بدء الاختبار</button>
+        </div>
+
+        <div id="quiz-area">
+            <form id="quiz-form">
+                <div id="questions-container"></div>
+                <button type="button" class="btn" style="width: 100%; margin-top: 20px;" onclick="submitQuiz()">إرسال النتيجة إلى الديسكورد</button>
+            </form>
+            <div id="result-box"></div>
+        </div>
+    </div>
+
+<script>
+    const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1550436495725436929/YYC8oPE60epaB0lukGM9VAHSFpb_v9iX0fxlle1O7KO99iwd2p4H4IMn6daCjvET9TkW";
+
+    const questions = [
+        { 
+            q: "1. ما هو التصرف الصحيح إذا حاول أحد اللاعبين استفزازك أثناء أدائك لمهامك الإدارية؟", 
+            opts: ["التعامل مع جميع اللاعبين باحترام وعدم الدخول في مشادات", "إعطاؤه عقوبة مباشرة دون دليل بسبب الاستفزاز", "استخدام صلاحيات الإدارة للانتقام منه شخصياً"], 
+            ans: 0 
+        },
+        { 
+            q: "2. هل يحق للإداري إعطاء نفسه أو غيره أموالاً أو أسلحة أو مركبات؟", 
+            opts: ["نعم، في أي وقت يشاء", "لا، يمنع منعاً باتاً إلا بوجود سبب إداري موثق", "نعم، إذا كان يمتلك رتبة عالية"], 
+            ans: 1 
+        },
+        { 
+            q: "3. متى يُسمح للإداري بالتدخل في الـ RP؟", 
+            opts: ["في أي وقت يشاء للتأكد من سير السيرفر", "فقط عند وجود مخالفة تستدعي التدخل", "لمساعدة أصدقائه في السيناريو"], 
+            ans: 1 
+        },
+        { 
+            q: "4. ما الإجراء المطلوب إذا كانت الشكوى ضد صديق أو شخص تعرفه؟", 
+            opts: ["إغلاق الشكوى وحمايته", "تحويل الشكوى إلى إداري آخر منعاً لتعارض المصالح", "تخفيف العقوبة عنه تلقائياً"], 
+            ans: 1 
+        },
+        { 
+            q: "5. ما الإجراء المتبع عند غياب الإداري لفترة طويلة بدون عذر؟", 
+            opts: ["لا يتم اتخاذ أي إجراء", "كثرة الغياب بدون عذر قد تؤدي إلى سحب الرتبة", "يُمنح مكافأة غياب"], 
+            ans: 1 
+        },
+        { 
+            q: "6. هل يحق للإداري مشاركة التذاكر أو سجلات اللاعبين خارج الإدارة؟", 
+            opts: ["نعم، مع الأصدقاء المقربين", "يمنع منعاً باتاً مشاركة السجلات أو التذاكر أو تسريب الخطط الإدارية", "نعم، لمعرفة رأي اللاعبين الآخرين"], 
+            ans: 1 
+        },
+        { 
+            q: "7. على ماذا تعتمد الترقية والنقاط الإدارية؟", 
+            opts: ["تعتمد على النشاط، الأداء، الانضباط، والتعامل مع اللاعبين (ومبنية على عمل فعلي)", "تعتمد على طلب الترقية بشكل متكرر والضغط على المسؤولين", "تعتمد على مدة التواجد فقط دون عمل"], 
+            ans: 0 
+        },
+        { 
+            q: "8. من هي الجهة المخولة بحظر أو فصل الإداريين وفقاً للقوانين؟", 
+            opts: ["أي إداري متواجد في السيرفر", "الإدارة العليا فقط، ولا يتم الفصل إلا بدليل قاطع", "المسؤول المباشر بدون دليل"], 
+            ans: 1 
+        }
+    ];
+
+    let adminName = "";
+    let candidateName = "";
+
+    function startQuiz() {
+        adminName = document.getElementById('admin-input').value.trim();
+        candidateName = document.getElementById('candidate-input').value.trim();
+
+        if (!adminName || !candidateName) {
+            alert("يرجى إدخال اسم الإداري واسم المتقدم قبل البدء!");
+            return;
+        }
+
+        document.getElementById('admin-display').innerText = adminName;
+        document.getElementById('candidate-display').innerText = candidateName;
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+
+        renderQuestions();
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-container');
+        container.innerHTML = "";
+        questions.forEach((item, index) => {
+            let optsHTML = "";
+            item.opts.forEach((opt, oIndex) => {
+                optsHTML += `
+                    <label class="option-label">
+                        <input type="radio" name="q-${index}" value="${oIndex}"> ${opt}
+                    </label>
+                `;
+            });
+            container.innerHTML += `
+                <div class="question-card">
+                    <div><b>${item.q}</b></div>
+                    <div class="options">${optsHTML}</div>
+                </div>
+            `;
+        });
+    }
+
+    function submitQuiz() {
+        let score = 0;
+        let total = questions.length;
+        let answered = true;
+
+        questions.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q-${index}"]:checked`);
+            if (!selected) answered = false;
+            else if (parseInt(selected.value) === item.ans) score++;
+        });
+
+        if (!answered) {
+            alert("يرجى الإجابة على جميع الأسئلة قبل الإرسال!");
+            return;
+        }
+
+        const percentage = Math.round((score / total) * 100);
+        const status = percentage >= 75 ? "✅ مقبول" : "❌ مرفوض";
+
+        const resultBox = document.getElementById('result-box');
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `النتيجة: ${score} من ${total} (${percentage}%) - الحالة: ${status}`;
+
+        const payload = {
+            embeds: [{
+                title: "📋 تقرير اختبار إداري جديد",
+                color: percentage >= 75 ? 65280 : 16711680,
+                fields: [
+                    { name: "👑 الإداري المُختَبِر", value: adminName, inline: true },
+                    { name: "👤 المتقدم للاختبار", value: candidateName, inline: true },
+                    { name: "📊 الدرجة والنسبة", value: `${score}/${total} (${percentage}%)`, inline: true },
+                    { name: "🎯 النتيجة النهائية", value: status, inline: false }
+                ],
+                footer: { text: "سيرفر الديسكورد: Respect Eagle" },
+                timestamp: new Date()
+            }]
+        };
+
+        fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            alert("تم إرسال النتيجة إلى روم الديسكورد بنجاح!");
+        }).catch(err => {
+            alert("حدث خطأ أثناء الإرسال للديسكورد.");
+        });
+    }
+</script>
+
+</body>
+</html>
